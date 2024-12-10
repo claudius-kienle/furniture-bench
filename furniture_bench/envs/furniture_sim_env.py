@@ -22,7 +22,7 @@ from pathlib import Path
 
 import torch
 import cv2
-import gym
+import gymnasium as gym
 import numpy as np
 
 import furniture_bench.utils.transform as T
@@ -164,7 +164,7 @@ class FurnitureSimEnv(gym.Env):
 
         self.init_ee_pos, self.init_ee_quat = self.get_ee_pose()
 
-        gym.logger.set_level(gym.logger.INFO)
+        # gym.logger.set_level(gym.logger.INFO)
 
         self.record = record
         if self.record:
@@ -1149,7 +1149,7 @@ class FurnitureSimEnv(gym.Env):
     def is_success(self):
         return [{"task": self.furnitures[env_idx].all_assembled()} for env_idx in range(self.num_envs)]
 
-    def reset(self):
+    def reset(self, **kwargs):
         # can also reset the full set of robots/parts, without applying torques and refreshing
         # self._reset_franka_all()
         # self._reset_parts_all()
