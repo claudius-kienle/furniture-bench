@@ -822,6 +822,20 @@ class FurnitureSimEnv(gym.Env):
         obs = self._get_observation()
         self.env_steps += 1
 
+        if self.record:
+            record_images = []
+            color_obs = {k: v for k, v in obs.items() if k.startswith("color")}
+            for k in sorted(color_obs.keys()):
+                img = color_obs[k][0]
+                if not self.np_step_out:
+                    img = img.cpu().numpy().copy()
+                if self.channel_first:
+                    img = img.transpose(0, 2, 3, 1)
+                record_images.append(img.squeeze())
+            stacked_img = np.hstack(record_images)
+            self.video_writer.write(cv2.cvtColor(stacked_img, cv2.COLOR_RGB2BGR))
+
+
         return (
             obs,
             self._reward(),
@@ -1101,18 +1115,6 @@ class FurnitureSimEnv(gym.Env):
                 robot_state = np.concatenate(list(robot_state.values()), -1)
             else:
                 robot_state = torch.cat(list(robot_state.values()), -1)
-
-        if self.record:
-            record_images = []
-            for k in sorted(color_obs.keys()):
-                img = color_obs[k][0]
-                if not self.np_step_out:
-                    img = img.cpu().numpy().copy()
-                if self.channel_first:
-                    img = img.transpose(0, 2, 3, 1)
-                record_images.append(img.squeeze())
-            stacked_img = np.hstack(record_images)
-            self.video_writer.write(cv2.cvtColor(stacked_img, cv2.COLOR_RGB2BGR))
 
         obs = {}
         if (
