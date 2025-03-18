@@ -425,6 +425,7 @@ class Furniture(ABC):
         part_idx2: int,
         parts_poses: Optional[npt.NDArray[np.float32]] = None,
         founds: Optional[npt.NDArray[np.bool_]] = None,
+        assembled_pos_threshold: Optional[List[float]] = None,
     ) -> bool:
         """Compute whether the part_idx1 and part_idx2 are assembled or not."""
         if (part_idx1, part_idx2) not in self.should_be_assembled:
@@ -453,6 +454,8 @@ class Furniture(ABC):
         if assembled_rel_poses is None:
             raise Exception("No relative pose!")
 
+        assembled_pos_threshold = assembled_pos_threshold or self.assembled_pos_threshold
+
         for assembled_rel_pose in assembled_rel_poses:
             ori_bound = (
                 -1 if (part_idx1, part_idx2) in self.position_only else self.ori_bound
@@ -461,7 +464,7 @@ class Furniture(ABC):
                 assembled_rel_pose,
                 rel_pose,
                 ori_bound=ori_bound,
-                pos_threshold=self.assembled_pos_threshold,
+                pos_threshold=assembled_pos_threshold,
             ):
                 return True
 
