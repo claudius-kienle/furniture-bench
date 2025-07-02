@@ -22,7 +22,7 @@ from pathlib import Path
 
 import torch
 import cv2
-import gym
+import gymnasium as gym
 import numpy as np
 
 import furniture_bench.utils.transform as T
@@ -166,8 +166,6 @@ class FurnitureSimEnv(gym.Env):
         self.isaac_gym.refresh_actor_root_state_tensor(self.sim)
 
         self.init_ee_pos, self.init_ee_quat = self.get_ee_pose()
-
-        gym.logger.set_level(gym.logger.INFO)
 
         self.record = record
         if self.record:
@@ -693,7 +691,7 @@ class FurnitureSimEnv(gym.Env):
             elif k.startswith("depth"):
                 obs_dict[k] = gym.spaces.Box(0, 255, img_size)
             elif k == "parts_poses":
-                obs_dict[k] = gym.spaces.Box(low, high, parts_poses)
+                obs_dict[k] = gym.spaces.Box(low, high, (parts_poses,))
             else:
                 raise ValueError(f"FurnitureSim does not support observation ({k}).")
 
@@ -821,6 +819,20 @@ class FurnitureSimEnv(gym.Env):
 
         obs = self._get_observation()
         self.env_steps += 1
+
+        if self.record:
+            record_images = []
+            color_obs = {k: v for k, v in obs.items() if k.startswith("color")}
+            for k in sorted(color_obs.keys()):
+                img = color_obs[k][0]
+                if not self.np_step_out:
+                    img = img.cpu().numpy().copy()
+                if self.channel_first:
+                    img = img.transpose(0, 2, 3, 1)
+                record_images.append(img.squeeze())
+            stacked_img = np.hstack(record_images)
+            self.video_writer.write(cv2.cvtColor(stacked_img, cv2.COLOR_RGB2BGR))
+
 
         return (
             obs,
@@ -1102,18 +1114,6 @@ class FurnitureSimEnv(gym.Env):
             else:
                 robot_state = torch.cat(list(robot_state.values()), -1)
 
-        if self.record:
-            record_images = []
-            for k in sorted(color_obs.keys()):
-                img = color_obs[k][0]
-                if not self.np_step_out:
-                    img = img.cpu().numpy().copy()
-                if self.channel_first:
-                    img = img.transpose(0, 2, 3, 1)
-                record_images.append(img.squeeze())
-            stacked_img = np.hstack(record_images)
-            self.video_writer.write(cv2.cvtColor(stacked_img, cv2.COLOR_RGB2BGR))
-
         obs = {}
         if (
             isinstance(robot_state, (np.ndarray, torch.Tensor)) or robot_state
@@ -1153,7 +1153,7 @@ class FurnitureSimEnv(gym.Env):
     def is_success(self):
         return [{"task": self.furnitures[env_idx].all_assembled()} for env_idx in range(self.num_envs)]
 
-    def reset(self):
+    def reset(self, **kwargs):
         # can also reset the full set of robots/parts, without applying torques and refreshing
         # self._reset_franka_all()
         # self._reset_parts_all()
