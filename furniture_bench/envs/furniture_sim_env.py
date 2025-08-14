@@ -1155,11 +1155,16 @@ class FurnitureSimEnv(gym.Env):
 
     def reset(self, **kwargs):
         # can also reset the full set of robots/parts, without applying torques and refreshing
+        from gymnasium.utils import seeding
+        if "seed" in kwargs:
+            seed = kwargs["seed"]
+            if seed is not None:
+                self._np_random, self._np_random_seed = seeding.np_random(seed)
         # self._reset_franka_all()
         # self._reset_parts_all()
         for i in range(self.num_envs):
             # if using ._reset_*_all(), can set reset_franka=False and reset_parts=False in .reset_env
-            self.reset_env(i)  
+            self.reset_env(i, self._np_random)  
 
             # apply zero torque across the board and refresh in between each env reset (not needed if using ._reset_*_all())
             torque_action = torch.zeros_like(self.dof_pos)
@@ -1187,7 +1192,7 @@ class FurnitureSimEnv(gym.Env):
         for i in range(self.num_envs):
             self.reset_env_to(i, state[i])
 
-    def reset_env(self, env_idx, reset_franka=True, reset_parts=True):
+    def reset_env(self, env_idx, generator, reset_franka=True, reset_parts=True):
         """Resets the environment. **MUST refresh in between multiple calls
         to this function to have changes properly reflected in each environment.
         Also might want to set a zero-torque action via .set_dof_actuation_force_tensor
@@ -1201,7 +1206,7 @@ class FurnitureSimEnv(gym.Env):
         self.furnitures[env_idx].reset()
         if self.randomness == Randomness.LOW and not self.init_assembled:
             self.furnitures[env_idx].randomize_init_pose(
-                self.from_skill, pos_range=[-0.015, 0.015], rot_range=15
+                self.from_skill, pos_range=[-0.015, 0.015], rot_range=15, generator=generator
             )
 
         if self.randomness == Randomness.MEDIUM:

@@ -67,7 +67,7 @@ class Furniture(ABC):
         self.assembled_pos_threshold = config["furniture"]["assembled_pos_threshold"]
 
     def randomize_init_pose(
-        self, from_skill, pos_range=[-0.05, 0.05], rot_range=45
+        self, from_skill, pos_range=[-0.05, 0.05], rot_range=45, generator=None
     ) -> bool:
         """Randomize the furniture initial pose."""
         trial = 0
@@ -75,7 +75,7 @@ class Furniture(ABC):
         while True:
             trial += 1
             for part in self.parts:
-                part.randomize_init_pose(from_skill, pos_range, rot_range)
+                part.randomize_init_pose(from_skill, pos_range, rot_range, generator=generator)
             if trial > max_trial:
                 logger.error("Failed to randomize init pose")
                 return False
