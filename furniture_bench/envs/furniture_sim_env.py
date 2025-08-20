@@ -1072,7 +1072,7 @@ class FurnitureSimEnv(gym.Env):
             norm = np.linalg.norm(v)
             return v / norm if norm > 0 else v
 
-        forward = normalize(cam_target - cam_pos)
+        forward = normalize(cam_pos - cam_target)
         up = np.array([0, 1, 0])
         right = normalize(np.cross(up, forward))
         # Recompute Up Vector
